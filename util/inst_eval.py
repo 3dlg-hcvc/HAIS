@@ -5,8 +5,10 @@ import util.utils_3d as util_3d
 import util.utils as util
 
 # ---------- Label info ---------- #
-CLASS_LABELS = ['cabinet', 'bed', 'chair', 'sofa', 'table', 'door', 'window', 'bookshelf', 'picture', 'counter', 'desk', 'curtain', 'refrigerator', 'shower curtain', 'toilet', 'sink', 'bathtub', 'otherfurniture']
-VALID_CLASS_IDS = np.array([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 24, 28, 33, 34, 36, 39])
+CLASS_LABELS = ['door', 'table', 'chair', 'cabinet', 'window', 'sofa', 'microwave', 'pillow',
+'tv_monitor', 'curtain', 'trash_can', 'suitcase', 'sink', 'backpack', 'bed', 'refrigerator','toilet']
+VALID_CLASS_IDS = range(4, 21)
+
 ID_TO_LABEL = {}
 LABEL_TO_ID = {}
 for i in range(len(VALID_CLASS_IDS)):

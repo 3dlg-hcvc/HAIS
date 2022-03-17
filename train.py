@@ -187,6 +187,11 @@ if __name__ == '__main__':
         else:
             print("Error: no data loader - " + data_name)
             exit(0)
+    elif cfg.dataset == 'multiscan_inst':
+        if data_name == "multiscan_inst":
+            import data.multiscan_inst
+            dataset = data.multiscan_inst.Dataset()
+
     else:
         raise NotImplementedError("Not yet supported")
 

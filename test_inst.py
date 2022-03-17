@@ -8,7 +8,11 @@ from util.config import cfg
 cfg.task = 'test'
 from util.log import logger
 import util.utils as utils
-import util.eval as eval
+
+if cfg.seg_task == "instance":
+    import util.inst_eval as eval
+else:
+    import util.part_eval as eval
 
 def init():
     global result_dir
@@ -22,7 +26,7 @@ def init():
     os.system('cp {} {}'.format(cfg.config, backup_dir))
 
     global semantic_label_idx
-    semantic_label_idx = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 24, 28, 33, 34, 36, 39]
+    semantic_label_idx = list(range(1, 21))
 
     logger.info(cfg)
 
@@ -238,6 +242,8 @@ if __name__ == '__main__':
     exp_name = cfg.config.split('/')[-1][:-5]
     model_name = exp_name.split('_')[0]
     data_name = exp_name.split('_')[-1]
+
+    task = cfg.task
 
     logger.info('=> creating model ...')
     logger.info('Classes: {}'.format(cfg.classes))
