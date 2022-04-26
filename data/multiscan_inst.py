@@ -210,8 +210,12 @@ class Dataset:
 
         total_inst_num = 0
         for i, idx in enumerate(id):
-
-            xyz_origin, rgb, normals, label, instance_label = self.train_files[idx]
+            input_instance = self.train_files[idx]
+            xyz_origin = input_instance['aligned_mesh'][:, :3]
+            rgb = input_instance['aligned_mesh'][:, 3:6]
+            normals = input_instance['aligned_mesh'][:, 6:9]
+            label = input_instance['sem_labels']
+            instance_label = input_instance['instance_ids']
 
             # jitter / flip x / rotation
             xyz_middle, normals = self.dataAugment(xyz_origin, normals, cfg.jitter, cfg.flip, cfg.rotation)
@@ -221,8 +225,8 @@ class Dataset:
 
             # elastic
             if cfg.elastic:
-                xyz = self.elastic(xyz, normals, 6 * self.scale // 50, 40 * self.scale / 50)
-                xyz = self.elastic(xyz, normals, 20 * self.scale // 50, 160 * self.scale / 50)
+                xyz, normals = self.elastic(xyz, normals, 6 * self.scale // 50, 40 * self.scale / 50)
+                xyz, normals = self.elastic(xyz, normals, 20 * self.scale // 50, 160 * self.scale / 50)
 
             # offset
             xyz -= xyz.min(0)
@@ -304,7 +308,12 @@ class Dataset:
 
         total_inst_num = 0
         for i, idx in enumerate(id):
-            xyz_origin, rgb, normals, label, instance_label = self.val_files[idx]
+            input_instance = self.val_files[idx]
+            xyz_origin = input_instance['aligned_mesh'][:, :3]
+            rgb = input_instance['aligned_mesh'][:, 3:6]
+            normals = input_instance['aligned_mesh'][:, 6:9]
+            label = input_instance['sem_labels']
+            instance_label = input_instance['instance_ids']
 
             # flip x / rotation
             xyz_middle, normals = self.dataAugment(xyz_origin, normals, False, True, False)
@@ -385,9 +394,17 @@ class Dataset:
         for i, idx in enumerate(id):
 
             if self.test_split == 'val':
-                xyz_origin, rgb, normals, label, instance_label = self.test_files[idx]
+                input_instance = self.test_files[idx]
+                xyz_origin = input_instance['aligned_mesh'][:, :3]
+                rgb = input_instance['aligned_mesh'][:, 3:6]
+                normals = input_instance['aligned_mesh'][:, 6:9]
+                label = input_instance['sem_labels']
+                instance_label = input_instance['instance_ids']
             elif self.test_split == 'test':
-                xyz_origin, rgb, normals = self.test_files[idx]
+                input_instance = self.test_files[idx]
+                xyz_origin = input_instance['aligned_mesh'][:, :3]
+                rgb = input_instance['aligned_mesh'][:, 3:6]
+                normals = input_instance['aligned_mesh'][:, 6:9]
             else:
                 print("Wrong test split: {}!".format(self.test_split))
                 exit(0)
