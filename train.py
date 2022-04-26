@@ -143,8 +143,9 @@ if __name__ == '__main__':
     init()
 
     exp_name = cfg.config.split('/')[-1][:-5]
-    model_name = exp_name.split('_')[0]
-    data_name = exp_name.split('_')[2]
+    exp_split = exp_name.split('_')
+    model_name = exp_split[0]
+    data_name = exp_split[-2] + "_" + exp_split[-1]
 
     # model
     logger.info('=> creating model ...')
@@ -187,7 +188,7 @@ if __name__ == '__main__':
             print("Error: no data loader - " + data_name)
             exit(0)
     elif cfg.dataset == 'multiscan':
-        if data_name == "multiscan":
+        if data_name in ("multiscan_inst", "multiscan_part"):
             import data.multiscan_inst
             dataset = data.multiscan_inst.Dataset()
         else:
