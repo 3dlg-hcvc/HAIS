@@ -6,7 +6,7 @@ GENERAL:
 
 DATA:
   data_root: dataset
-  dataset: multiscan
+  dataset: multiscan_inst
   filename_suffix: _inst_nostuff.pth
 
   classes: 20

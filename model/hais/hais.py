@@ -284,6 +284,10 @@ class HAIS(nn.Module):
 
             if self.cfg.dataset == 'scannetv2':
                 object_idxs = torch.nonzero(semantic_preds > 1).view(-1) # floor idx 0, wall idx 1
+            elif self.cfg.dataset == 'multiscan_inst':
+                object_idxs = torch.nonzero(semantic_preds > 2).view(-1)  # floor idx 0, ceiling idx 1, wall idx 2
+            elif self.cfg.dataset == 'multiscan_part':
+                object_idxs = torch.nonzero(semantic_preds > -1).view(-1)
             else:
                 raise Exception
 

@@ -46,9 +46,9 @@ def train_epoch(train_loader, model, model_fn, optimizer, epoch):
 
     for i, batch in enumerate(train_loader):
 
-        if batch['locs'].shape[0] < 20000:
-            logger.info("point num < 20000, continue")
-            continue
+        # if batch['locs'].shape[0] < 20000:
+        #     logger.info("point num < 20000, continue")
+        #     continue
 
         data_time.update(time.time() - end)
         torch.cuda.empty_cache()
@@ -187,7 +187,7 @@ if __name__ == '__main__':
         else:
             print("Error: no data loader - " + data_name)
             exit(0)
-    elif cfg.dataset == 'multiscan':
+    elif cfg.dataset == 'multiscan_inst' or cfg.dataset == 'multiscan_part':
         if data_name in ("multiscan_inst", "multiscan_part"):
             import data.multiscan_inst
             dataset = data.multiscan_inst.Dataset()
