@@ -69,5 +69,4 @@ dataset/scannetv2/val
 dataset/scannetv2/test
 dataset/scannetv2/val_gt
 dataset/scannetv2/scannetv2-labels.combined.tsv
-
-
+dataset/multiscan/
