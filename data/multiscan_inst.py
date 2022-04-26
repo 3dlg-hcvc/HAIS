@@ -3,7 +3,7 @@ import scipy.ndimage
 import scipy.interpolate
 import torch
 from torch.utils.data import DataLoader
-
+import open3d as o3d
 sys.path.append('../')
 
 from util.config import cfg
@@ -152,7 +152,7 @@ class Dataset:
         return instance_num, {"instance_info": instance_info, "instance_pointnum": instance_pointnum}
 
 
-    def dataAugment(self, xyz, normals=None, jitter=False, flip=False, rot=False):
+    def dataAugment(self, xyz, normals, jitter=False, flip=False, rot=False):
         m = np.eye(3)
         if jitter:
             m += np.random.randn(3, 3) * 0.1
@@ -161,11 +161,7 @@ class Dataset:
         if rot:
             theta = np.random.rand() * 2 * math.pi
             m = np.matmul(m, [[math.cos(theta), math.sin(theta), 0], [-math.sin(theta), math.cos(theta), 0], [0, 0, 1]])  # rotation
-        if normals is not None:
-            # new_normals = normals / np.linalg.norm(normals, axis=1).reshape(-1, 1)
-            return np.matmul(xyz, m), np.matmul(normals, np.transpose(np.linalg.inv(m)))
-        else:
-            return np.matmul(xyz, m)
+        return np.matmul(xyz, m), np.matmul(normals, np.transpose(np.linalg.inv(m)))
 
 
     def crop(self, xyz):
@@ -216,7 +212,6 @@ class Dataset:
         for i, idx in enumerate(id):
 
             xyz_origin, rgb, normals, label, instance_label = self.train_files[idx]
-
 
             # jitter / flip x / rotation
             xyz_middle = self.dataAugment(xyz_origin, normals, cfg.jitter, cfg.flip, cfg.rotation)
