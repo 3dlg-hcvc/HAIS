@@ -26,6 +26,7 @@ class Dataset:
         self.scale = cfg.scale
         self.max_npoint = cfg.max_npoint
         self.mode = cfg.mode
+        self.augmentation = cfg.augmentation
 
         self.train_split = getattr(cfg, 'train_split', 'train')
 
@@ -52,7 +53,6 @@ class Dataset:
         train_set = list(range(len(self.train_files)))
         self.train_data_loader = DataLoader(train_set, batch_size=self.batch_size, collate_fn=self.trainMerge, num_workers=self.train_workers,
                                             shuffle=True, sampler=None, drop_last=True, pin_memory=True)
-        
 
     def dist_trainLoader(self):
         train_file_names = sorted(glob.glob(os.path.join(self.data_root, self.dataset, 'train', '*' + self.filename_suffix)))
@@ -74,8 +74,6 @@ class Dataset:
                                     num_workers=self.train_workers,
                                     shuffle=False, sampler=self.data_sampler, 
                                     drop_last=False, pin_memory=True)
-        
-
 
     def valLoader(self):
         val_file_names = sorted(glob.glob(os.path.join(self.data_root, self.dataset, 'val', '*' + self.filename_suffix)))
@@ -87,7 +85,6 @@ class Dataset:
         self.val_data_loader = DataLoader(val_set, batch_size=self.batch_size, collate_fn=self.valMerge, num_workers=self.val_workers,
                                           shuffle=False, drop_last=False, pin_memory=True)
 
-
     def testLoader(self):
         self.test_file_names = sorted(glob.glob(os.path.join(self.data_root, self.dataset, self.test_split, '*' + self.filename_suffix)))
         self.test_files = [torch.load(i) for i in self.test_file_names]
@@ -97,10 +94,12 @@ class Dataset:
         test_set = list(np.arange(len(self.test_files)))
         self.test_data_loader = DataLoader(test_set, batch_size=1, collate_fn=self.testMerge, num_workers=self.test_workers,
                                            shuffle=False, drop_last=False, pin_memory=True)
-        
 
     # Elastic distortion
-    def elastic(self, x, gran, mag):
+    def elastic(self, x, normals, gran, mag):
+
+        pcd = o3d.geometry.PointCloud()
+
         blur0 = np.ones((3, 1, 1)).astype('float32') / 3
         blur1 = np.ones((1, 3, 1)).astype('float32') / 3
         blur2 = np.ones((1, 1, 3)).astype('float32') / 3
@@ -117,7 +116,12 @@ class Dataset:
         interp = [scipy.interpolate.RegularGridInterpolator(ax, n, bounds_error=0, fill_value=0) for n in noise]
         def g(x_):
             return np.hstack([i(x_)[:,None] for i in interp])
-        return x + g(x) * mag
+
+        vertices = x + g(x) * mag
+        pcd.points = o3d.utility.Vector3dVector(vertices)
+        pcd.normals = o3d.utility.Vector3dVector(normals)
+        pcd.estimate_normals()  # re-calculate normals
+        return vertices, np.asarray(pcd.normals)
 
 
     def getInstanceInfo(self, xyz, instance_label):
@@ -149,7 +153,7 @@ class Dataset:
         return instance_num, {"instance_info": instance_info, "instance_pointnum": instance_pointnum}
 
 
-    def dataAugment(self, xyz, jitter=False, flip=False, rot=False):
+    def dataAugment(self, xyz, normals=None, jitter=False, flip=False, rot=False):
         m = np.eye(3)
         if jitter:
             m += np.random.randn(3, 3) * 0.1
@@ -158,25 +162,32 @@ class Dataset:
         if rot:
             theta = np.random.rand() * 2 * math.pi
             m = np.matmul(m, [[math.cos(theta), math.sin(theta), 0], [-math.sin(theta), math.cos(theta), 0], [0, 0, 1]])  # rotation
-        return np.matmul(xyz, m)
+        if normals is not None:
+            # new_normals = normals / np.linalg.norm(normals, axis=1).reshape(-1, 1)
+            return np.matmul(xyz, m), np.matmul(normals, np.transpose(np.linalg.inv(m)))
+        else:
+            return np.matmul(xyz, m)
 
 
     def crop(self, xyz):
         '''
         :param xyz: (n, 3) >= 0
         '''
-        xyz_offset = xyz.copy()
-        valid_idxs = (xyz_offset.min(1) >= 0)
-        assert valid_idxs.sum() == xyz.shape[0]
-
-        full_scale = np.array([self.full_scale[1]] * 3)
-        room_range = xyz.max(0) - xyz.min(0)
-        while (valid_idxs.sum() > self.max_npoint):
-            offset = np.clip(full_scale - room_range + 0.001, None, 0) * np.random.rand(3)
-            xyz_offset = xyz + offset
-            valid_idxs = (xyz_offset.min(1) >= 0) * ((xyz_offset < full_scale).sum(1) == 3)
-            full_scale[:2] -= 32
-
+        while True:  # HACK!
+            xyz_offset = xyz.copy()
+            valid_idxs = (xyz_offset.min(1) >= 0)
+            assert valid_idxs.sum() == xyz.shape[0]
+            if valid_idxs.sum() <= self.max_npoint:
+                break
+            full_scale = np.array([self.full_scale[1]] * 3)
+            room_range = xyz.max(0) - xyz.min(0)
+            while (valid_idxs.sum() > self.max_npoint):
+                offset = np.clip(full_scale - room_range + 0.001, None, 0) * np.random.rand(3)
+                xyz_offset = xyz + offset
+                valid_idxs = (xyz_offset.min(1) >= 0) * ((xyz_offset < full_scale).sum(1) == 3)
+                full_scale[:2] -= 32
+            if valid_idxs.sum() > (self.max_npoint // 2):
+                break
         return xyz_offset, valid_idxs
 
 
@@ -205,60 +216,62 @@ class Dataset:
         total_inst_num = 0
         for i, idx in enumerate(id):
 
-            while(True): # HACK!! prevents the case that the crop method may over-crop the point cloud and cause no valid labels left
-                xyz_origin, rgb, label, instance_label = self.train_files[idx]
+            xyz_origin, rgb, normals, label, instance_label = self.train_files[idx]
 
 
-                # jitter / flip x / rotation
-                xyz_middle = self.dataAugment(xyz_origin, True, True, True)
+            # jitter / flip x / rotation
+            xyz_middle = self.dataAugment(xyz_origin, normals, self.augmentation.jitter, self.augmentation.flip, self.augmentation.rotation)
 
-                # scale
-                xyz = xyz_middle * self.scale
+            # scale
+            xyz = xyz_middle * self.scale
 
-                # elastic
-                xyz = self.elastic(xyz, 6 * self.scale // 50, 40 * self.scale / 50)
-                xyz = self.elastic(xyz, 20 * self.scale // 50, 160 * self.scale / 50)
+            # elastic
+            if self.augmentation.elastic:
+                xyz = self.elastic(xyz, normals, 6 * self.scale // 50, 40 * self.scale / 50)
+                xyz = self.elastic(xyz, normals, 20 * self.scale // 50, 160 * self.scale / 50)
 
-                # offset
-                xyz -= xyz.min(0)
+            # offset
+            xyz -= xyz.min(0)
 
-                # crop
-                xyz, valid_idxs = self.crop(xyz)
-                # HACK!! prevents the case that the crop method may over-crop the point cloud and cause no valid labels left
-                if valid_idxs.sum() == 0:
-                    continue
-                xyz_middle = xyz_middle[valid_idxs]
-                xyz = xyz[valid_idxs]
-                rgb = rgb[valid_idxs]
-                label = label[valid_idxs]
-                instance_label = self.getCroppedInstLabel(instance_label, valid_idxs)
+            # crop
+            xyz, valid_idxs = self.crop(xyz)
 
-                # HACK!! prevents the case that the crop method may over-crop the point cloud and cause no valid labels left
-                if len(np.unique(label)) == 1 and label[0] == -100:
-                    continue
-                if len(np.unique(instance_label)) == 1 and instance_label[0] == -100:
-                    continue
+            xyz_middle = xyz_middle[valid_idxs]
+            xyz = xyz[valid_idxs]
+            rgb = rgb[valid_idxs]
+            normals = normals[valid_idxs]
+            label = label[valid_idxs]
+            instance_label = self.getCroppedInstLabel(instance_label, valid_idxs)
 
-                # get instance information
-                inst_num, inst_infos = self.getInstanceInfo(xyz_middle, instance_label.astype(np.int32))
-                inst_info = inst_infos["instance_info"]  # (n, 9), (cx, cy, cz, minx, miny, minz, maxx, maxy, maxz)
-                inst_pointnum = inst_infos["instance_pointnum"]   # (nInst), list
 
-                instance_label[np.where(instance_label != -100)] += total_inst_num
-                total_inst_num += inst_num
+            # get instance information
+            inst_num, inst_infos = self.getInstanceInfo(xyz_middle, instance_label.astype(np.int32))
+            inst_info = inst_infos["instance_info"]  # (n, 9), (cx, cy, cz, minx, miny, minz, maxx, maxy, maxz)
+            inst_pointnum = inst_infos["instance_pointnum"]   # (nInst), list
 
-                # merge the scene to the batch
-                batch_offsets.append(batch_offsets[-1] + xyz.shape[0])
+            instance_label[np.where(instance_label != -100)] += total_inst_num
+            total_inst_num += inst_num
 
-                locs.append(torch.cat([torch.LongTensor(xyz.shape[0], 1).fill_(i), torch.from_numpy(xyz).long()], 1))
-                locs_float.append(torch.from_numpy(xyz_middle))
-                feats.append(torch.from_numpy(rgb) + torch.randn(3) * 0.1)
-                labels.append(torch.from_numpy(label))
-                instance_labels.append(torch.from_numpy(instance_label))
+            # merge the scene to the batch
+            batch_offsets.append(batch_offsets[-1] + xyz.shape[0])
 
-                instance_infos.append(torch.from_numpy(inst_info))
-                instance_pointnum.extend(inst_pointnum)
-                break
+            locs.append(torch.cat([torch.LongTensor(xyz.shape[0], 1).fill_(i), torch.from_numpy(xyz).long()], 1))
+            locs_float.append(torch.from_numpy(xyz_middle))
+            rgb_torch = torch.from_numpy(rgb)
+            if self.augmentation.color:
+                rgb_torch += torch.randn(3) * 0.1
+
+            if self.cfg.use_normals:
+                normals = normals / (np.linalg.norm(normals, axis=1).reshape(-1, 1) + np.finfo(float).eps)
+                normals = torch.from_numpy(normals)
+                feats.append(torch.cat(rgb_torch, normals, 1))
+            else:
+                feats.append(rgb_torch)
+            labels.append(torch.from_numpy(label))
+            instance_labels.append(torch.from_numpy(instance_label))
+
+            instance_infos.append(torch.from_numpy(inst_info))
+            instance_pointnum.extend(inst_pointnum)
 
         # merge all the scenes in the batchd
         batch_offsets = torch.tensor(batch_offsets, dtype=torch.int)  # int (B+1)
@@ -297,10 +310,10 @@ class Dataset:
 
         total_inst_num = 0
         for i, idx in enumerate(id):
-            xyz_origin, rgb, label, instance_label = self.val_files[idx]
+            xyz_origin, rgb, normals, label, instance_label = self.val_files[idx]
 
             # flip x / rotation
-            xyz_middle = self.dataAugment(xyz_origin, False, True, True)
+            xyz_middle = self.dataAugment(xyz_origin, normals, False, True, False)
 
             # scale
             xyz = xyz_middle * self.scale
@@ -314,6 +327,7 @@ class Dataset:
             xyz_middle = xyz_middle[valid_idxs]
             xyz = xyz[valid_idxs]
             rgb = rgb[valid_idxs]
+            normals = normals[valid_idxs]
             label = label[valid_idxs]
             instance_label = self.getCroppedInstLabel(instance_label, valid_idxs)
 
@@ -330,7 +344,13 @@ class Dataset:
 
             locs.append(torch.cat([torch.LongTensor(xyz.shape[0], 1).fill_(i), torch.from_numpy(xyz).long()], 1))
             locs_float.append(torch.from_numpy(xyz_middle))
-            feats.append(torch.from_numpy(rgb))
+
+            if self.cfg.use_normals:
+                normals = normals / (np.linalg.norm(normals, axis=1).reshape(-1, 1) + np.finfo(float).eps)
+                normals = torch.from_numpy(normals)
+                feats.append(torch.cat(torch.from_numpy(rgb), normals, 1))
+            else:
+                feats.append(torch.from_numpy(rgb))
             labels.append(torch.from_numpy(label))
             instance_labels.append(torch.from_numpy(instance_label))
 
@@ -371,15 +391,15 @@ class Dataset:
         for i, idx in enumerate(id):
 
             if self.test_split == 'val':
-                xyz_origin, rgb, label, instance_label = self.test_files[idx]
+                xyz_origin, rgb, normals, label, instance_label = self.test_files[idx]
             elif self.test_split == 'test':
-                xyz_origin, rgb = self.test_files[idx]
+                xyz_origin, rgb, normals = self.test_files[idx]
             else:
                 print("Wrong test split: {}!".format(self.test_split))
                 exit(0)
 
             # flip x / rotation
-            xyz_middle = self.dataAugment(xyz_origin, False, True, True)
+            xyz_middle = self.dataAugment(xyz_origin, normals, False, False, False)
 
             # scale
             xyz = xyz_middle * self.scale
@@ -392,7 +412,14 @@ class Dataset:
 
             locs.append(torch.cat([torch.LongTensor(xyz.shape[0], 1).fill_(i), torch.from_numpy(xyz).long()], 1))
             locs_float.append(torch.from_numpy(xyz_middle))
-            feats.append(torch.from_numpy(rgb))
+
+
+            if self.cfg.use_normals:
+                normals = normals / (np.linalg.norm(normals, axis=1).reshape(-1, 1) + np.finfo(float).eps)
+                normals = torch.from_numpy(normals)
+                feats.append(torch.cat(torch.from_numpy(rgb), normals, 1))
+            else:
+                feats.append(torch.from_numpy(rgb))
 
             if self.test_split == 'val':
                 labels.append(torch.from_numpy(label))

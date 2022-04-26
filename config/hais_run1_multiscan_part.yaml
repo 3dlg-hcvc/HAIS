@@ -2,14 +2,14 @@ GENERAL:
   task: train  # train, test
   manual_seed: 123
   model_dir: model/hais/hais.py
-  dataset_dir: data/multiscan_inst.py
+  dataset_dir: data/scannetv2_inst.py
 
 DATA:
   data_root: dataset
   dataset: multiscan
   filename_suffix: _inst_nostuff.pth
 
-  classes: 20
+  classes: 16
   ignore_label: -100
 
   input_channel: 3
@@ -18,6 +18,12 @@ DATA:
   full_scale: [128, 512]
   max_npoint: 250000
   mode: 4 # 4=mean
+  augmentation:
+    jitter: True
+    flip: True
+    rotation: True
+    elastic: True
+    color: True
 
 STRUCTURE:
   model_name: hais
@@ -25,9 +31,10 @@ STRUCTURE:
   block_residual: True
   block_reps: 2
   use_coords: True
+  use_normals: False
 
 TRAIN:
-  epochs: 500
+  epochs: 512
   train_workers: 16 # data loader workers
   optim: Adam # Adam or SGD
   lr: 0.001

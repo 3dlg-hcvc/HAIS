@@ -171,7 +171,6 @@ if __name__ == '__main__':
         optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), 
             lr=cfg.lr, momentum=cfg.momentum, weight_decay=cfg.weight_decay)
 
-
     model_fn = model_fn_decorator()
 
     # dataset
@@ -187,18 +186,20 @@ if __name__ == '__main__':
         else:
             print("Error: no data loader - " + data_name)
             exit(0)
-    elif cfg.dataset == 'multiscan_inst':
-        if data_name == "multiscan_inst":
+    elif cfg.dataset == 'multiscan':
+        if data_name == "multiscan":
             import data.multiscan_inst
             dataset = data.multiscan_inst.Dataset()
+        else:
+            print("Error: no data loader - " + data_name)
+            exit(0)
 
     else:
         raise NotImplementedError("Not yet supported")
 
 
     # resume from the latest epoch, or specify the epoch to restore
-    start_epoch = utils.checkpoint_restore(cfg, model, optimizer, cfg.exp_path, 
-        cfg.config.split('/')[-1][:-5], use_cuda)      
+    start_epoch = utils.checkpoint_restore(cfg, model, optimizer, cfg.exp_path, cfg.config.split('/')[-1][:-5], use_cuda)
 
 
     if cfg.dist:

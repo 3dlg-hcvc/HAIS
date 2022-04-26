@@ -131,6 +131,8 @@ class HAIS(nn.Module):
 
         if cfg.use_coords:
             input_c += 3
+        if cfg.use_normals:
+            input_c += 3
 
         self.cfg = cfg
 
