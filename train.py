@@ -191,6 +191,11 @@ if __name__ == '__main__':
         if data_name in ("multiscan_inst", "multiscan_part"):
             import data.multiscan_inst
             dataset = data.multiscan_inst.Dataset()
+            if cfg.dist:
+                dataset.dist_trainLoader()
+            else:
+                dataset.trainLoader()
+            dataset.valLoader()
         else:
             print("Error: no data loader - " + data_name)
             exit(0)
