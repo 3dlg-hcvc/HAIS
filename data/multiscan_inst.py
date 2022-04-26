@@ -214,7 +214,7 @@ class Dataset:
             xyz_origin, rgb, normals, label, instance_label = self.train_files[idx]
 
             # jitter / flip x / rotation
-            xyz_middle = self.dataAugment(xyz_origin, normals, cfg.jitter, cfg.flip, cfg.rotation)
+            xyz_middle, normals = self.dataAugment(xyz_origin, normals, cfg.jitter, cfg.flip, cfg.rotation)
 
             # scale
             xyz = xyz_middle * self.scale
@@ -307,7 +307,7 @@ class Dataset:
             xyz_origin, rgb, normals, label, instance_label = self.val_files[idx]
 
             # flip x / rotation
-            xyz_middle = self.dataAugment(xyz_origin, normals, False, True, False)
+            xyz_middle, normals = self.dataAugment(xyz_origin, normals, False, True, False)
 
             # scale
             xyz = xyz_middle * self.scale
@@ -393,7 +393,7 @@ class Dataset:
                 exit(0)
 
             # flip x / rotation
-            xyz_middle = self.dataAugment(xyz_origin, normals, False, False, False)
+            xyz_middle, normals = self.dataAugment(xyz_origin, normals, False, False, False)
 
             # scale
             xyz = xyz_middle * self.scale
