@@ -26,7 +26,6 @@ class Dataset:
         self.scale = cfg.scale
         self.max_npoint = cfg.max_npoint
         self.mode = cfg.mode
-        self.augmentation = cfg.augmentation
 
         self.train_split = getattr(cfg, 'train_split', 'train')
 
@@ -220,13 +219,13 @@ class Dataset:
 
 
             # jitter / flip x / rotation
-            xyz_middle = self.dataAugment(xyz_origin, normals, self.augmentation.jitter, self.augmentation.flip, self.augmentation.rotation)
+            xyz_middle = self.dataAugment(xyz_origin, normals, cfg.jitter, cfg.flip, cfg.rotation)
 
             # scale
             xyz = xyz_middle * self.scale
 
             # elastic
-            if self.augmentation.elastic:
+            if cfg.elastic:
                 xyz = self.elastic(xyz, normals, 6 * self.scale // 50, 40 * self.scale / 50)
                 xyz = self.elastic(xyz, normals, 20 * self.scale // 50, 160 * self.scale / 50)
 
@@ -258,10 +257,10 @@ class Dataset:
             locs.append(torch.cat([torch.LongTensor(xyz.shape[0], 1).fill_(i), torch.from_numpy(xyz).long()], 1))
             locs_float.append(torch.from_numpy(xyz_middle))
             rgb_torch = torch.from_numpy(rgb)
-            if self.augmentation.color:
+            if cfg.color:
                 rgb_torch += torch.randn(3) * 0.1
 
-            if self.cfg.use_normals:
+            if cfg.use_normals:
                 normals = normals / (np.linalg.norm(normals, axis=1).reshape(-1, 1) + np.finfo(float).eps)
                 normals = torch.from_numpy(normals)
                 feats.append(torch.cat(rgb_torch, normals, 1))
@@ -345,7 +344,7 @@ class Dataset:
             locs.append(torch.cat([torch.LongTensor(xyz.shape[0], 1).fill_(i), torch.from_numpy(xyz).long()], 1))
             locs_float.append(torch.from_numpy(xyz_middle))
 
-            if self.cfg.use_normals:
+            if cfg.use_normals:
                 normals = normals / (np.linalg.norm(normals, axis=1).reshape(-1, 1) + np.finfo(float).eps)
                 normals = torch.from_numpy(normals)
                 feats.append(torch.cat(torch.from_numpy(rgb), normals, 1))
@@ -413,8 +412,7 @@ class Dataset:
             locs.append(torch.cat([torch.LongTensor(xyz.shape[0], 1).fill_(i), torch.from_numpy(xyz).long()], 1))
             locs_float.append(torch.from_numpy(xyz_middle))
 
-
-            if self.cfg.use_normals:
+            if cfg.use_normals:
                 normals = normals / (np.linalg.norm(normals, axis=1).reshape(-1, 1) + np.finfo(float).eps)
                 normals = torch.from_numpy(normals)
                 feats.append(torch.cat(torch.from_numpy(rgb), normals, 1))

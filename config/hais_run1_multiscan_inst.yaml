@@ -18,12 +18,12 @@ DATA:
   full_scale: [128, 512]
   max_npoint: 250000
   mode: 4 # 4=mean
-  augmentation:
-    jitter: True
-    flip: True
-    rotation: True
-    elastic: True
-    color: True
+
+  jitter: True
+  flip: True
+  rotation: True
+  elastic: True
+  color: True
 
 STRUCTURE:
   model_name: hais
