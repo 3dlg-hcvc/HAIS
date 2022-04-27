@@ -84,43 +84,35 @@ COLOR_DETECTRON2 = np.array(
         # 1.000, 1.000, 1.000
     ]).astype(np.float32).reshape(-1, 3) * 255
 
-SEMANTIC_IDXS = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 24, 28, 33, 34, 36, 39])
-SEMANTIC_NAMES = np.array(['wall', 'floor', 'cabinet', 'bed', 'chair', 'sofa', 'table', 'door', 'window', 'bookshelf', 'picture', 'counter',
-                        'desk', 'curtain', 'refridgerator', 'shower curtain', 'toilet', 'sink', 'bathtub', 'otherfurniture'])
+SEMANTIC_IDXS = np.array([1, 2, 3, 4, 5])
+SEMANTIC_NAMES = np.array(['static', 'door', 'drawer', 'window', 'lid'])
 CLASS_COLOR = {
     'unannotated': [0, 0, 0],
-    'floor': [143, 223, 142],
-    'wall': [171, 198, 230],
-    'cabinet': [0, 120, 177],
-    'bed': [255, 188, 126],
-    'chair': [189, 189, 57],
-    'sofa': [144, 86, 76],
-    'table': [255, 152, 153],
-    'door': [222, 40, 47],
-    'window': [197, 176, 212],
-    'bookshelf': [150, 103, 185],
-    'picture': [200, 156, 149],
-    'counter': [0, 190, 206],
-    'desk': [252, 183, 210],
-    'curtain': [219, 219, 146],
-    'refridgerator': [255, 127, 43],
-    'bathtub': [234, 119, 192],
-    'shower curtain': [150, 218, 228],
-    'toilet': [0, 160, 55],
-    'sink': [110, 128, 143],
-    'otherfurniture': [80, 83, 160]
+    'static': [143, 223, 142],
+    'door': [171, 198, 230],
+    'drawer': [0, 120, 177],
+    'window': [255, 188, 126],
+    'lid': [189, 189, 57],
 }
-SEMANTIC_IDX2NAME = {1: 'wall', 2: 'floor', 3: 'cabinet', 4: 'bed', 5: 'chair', 6: 'sofa', 7: 'table', 8: 'door', 9: 'window', 10: 'bookshelf', 11: 'picture',
-                12: 'counter', 14: 'desk', 16: 'curtain', 24: 'refridgerator', 28: 'shower curtain', 33: 'toilet',  34: 'sink', 36: 'bathtub', 39: 'otherfurniture'}
+SEMANTIC_IDX2NAME = {1: 'static', 2: 'door', 3: 'drawer', 4: 'window', 5: 'lid'}
 
 
 def get_coords_color(opt):
-    input_file = os.path.join(opt.data_path, opt.data_split, opt.room_name + '_inst_nostuff.pth')
+    input_file = os.path.join(opt.data_path, opt.data_split, opt.room_name + '.pth')
     assert os.path.isfile(input_file), 'File not exist - {}.'.format(input_file)
     if opt.data_split == 'test':
-        xyz, rgb = torch.load(input_file)
+        input_instance = torch.load(input_file)
+        xyz = input_instance['aligned_mesh'][:, :3]
+        rgb = input_instance['aligned_mesh'][:, 3:6] / 127.5 - 1
+        normals = input_instance['aligned_mesh'][:, 6:9]
     else:
-        xyz, rgb, label, inst_label = torch.load(input_file)
+        input_instance = torch.load(input_file)
+
+        xyz = input_instance['aligned_mesh'][:, :3]
+        rgb = input_instance['aligned_mesh'][:, 3:6] / 127.5 - 1
+        normals = input_instance['aligned_mesh'][:, 6:9]
+        label = input_instance['sem_labels']
+        inst_label = input_instance['instance_ids']
 
     rgb = (rgb + 1) * 127.5
 

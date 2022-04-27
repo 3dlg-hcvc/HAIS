@@ -5,9 +5,8 @@ import util.utils_3d as util_3d
 import util.utils as util
 
 # ---------- Label info ---------- #
-CLASS_LABELS = ['cabinet:door', 'cabinet:cabinet', 'table:table', 'cabinet:drawer', 'door:door', 'door:frame', 'window:window', 'table:drawer', 'window:frame', 'bed:bed', 'refrigerator:door', 
-'toilet:toilet', "refrigerator:refrigerator", "bed:drawer", "microwave:microwave", "microwave:door", "toilet:lid", "table:door"]
-VALID_CLASS_IDS = range(1, 19)
+CLASS_LABELS = ['static', 'door', 'drawer', 'window', 'lid']
+VALID_CLASS_IDS = range(1, 6)
 
 ID_TO_LABEL = {}
 LABEL_TO_ID = {}

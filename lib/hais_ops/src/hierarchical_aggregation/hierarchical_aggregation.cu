@@ -5,7 +5,7 @@
 #include <math.h>
 #include <assert.h>
 
-#define MAX_PRIMARY_NUM 1024
+#define MAX_PRIMARY_NUM 8192
 #define MAX_PER_PRIMARY_ABSORB_FRAGMENT_NUM  1024
 #define INFINITY_DIS_SQUARE 10000
 #define MAX_PER_PRIMARY_ABSORB_POINT_NUM 8192

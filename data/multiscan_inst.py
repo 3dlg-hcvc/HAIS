@@ -212,7 +212,7 @@ class Dataset:
         for i, idx in enumerate(id):
             input_instance = self.train_files[idx]
             xyz_origin = input_instance['aligned_mesh'][:, :3]
-            rgb = input_instance['aligned_mesh'][:, 3:6]
+            rgb = input_instance['aligned_mesh'][:, 3:6] / 127.5 - 1
             normals = input_instance['aligned_mesh'][:, 6:9]
             label = input_instance['sem_labels']
             instance_label = input_instance['instance_ids']
@@ -310,7 +310,7 @@ class Dataset:
         for i, idx in enumerate(id):
             input_instance = self.val_files[idx]
             xyz_origin = input_instance['aligned_mesh'][:, :3]
-            rgb = input_instance['aligned_mesh'][:, 3:6]
+            rgb = input_instance['aligned_mesh'][:, 3:6] / 127.5 - 1
             normals = input_instance['aligned_mesh'][:, 6:9]
             label = input_instance['sem_labels']
             instance_label = input_instance['instance_ids']
@@ -396,14 +396,14 @@ class Dataset:
             if self.test_split == 'val':
                 input_instance = self.test_files[idx]
                 xyz_origin = input_instance['aligned_mesh'][:, :3]
-                rgb = input_instance['aligned_mesh'][:, 3:6]
+                rgb = input_instance['aligned_mesh'][:, 3:6] / 127.5 - 1
                 normals = input_instance['aligned_mesh'][:, 6:9]
                 label = input_instance['sem_labels']
                 instance_label = input_instance['instance_ids']
             elif self.test_split == 'test':
                 input_instance = self.test_files[idx]
                 xyz_origin = input_instance['aligned_mesh'][:, :3]
-                rgb = input_instance['aligned_mesh'][:, 3:6]
+                rgb = input_instance['aligned_mesh'][:, 3:6] / 127.5 - 1
                 normals = input_instance['aligned_mesh'][:, 6:9]
             else:
                 print("Wrong test split: {}!".format(self.test_split))
