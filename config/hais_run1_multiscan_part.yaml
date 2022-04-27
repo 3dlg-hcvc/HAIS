@@ -7,7 +7,7 @@ GENERAL:
 DATA:
   data_root: dataset
   dataset: multiscan_part
-  filename_suffix: _inst_nostuff.pth
+  filename_suffix: .pth
 
   classes: 5
   ignore_label: -100
