@@ -165,7 +165,7 @@ class Dataset:
         return np.matmul(xyz, m), np.matmul(normals, np.transpose(np.linalg.inv(m)))
 
 
-    def crop(self, xyz):
+    def crop(self, xyz, semantic_labels, inst_ids):
         '''
         :param xyz: (n, 3) >= 0
         '''
@@ -182,7 +182,7 @@ class Dataset:
                 xyz_offset = xyz + offset
                 valid_idxs = (xyz_offset.min(1) >= 0) * ((xyz_offset < full_scale).sum(1) == 3)
                 full_scale[:2] -= 32
-            if valid_idxs.sum() > (self.max_npoint // 2):
+            if valid_idxs.sum() > (self.max_npoint // 10) and np.any(semantic_labels != cfg.ignore_label) and np.any(inst_ids != cfg.ignore_label):
                 break
         return xyz_offset, valid_idxs
 
@@ -229,7 +229,7 @@ class Dataset:
             xyz -= xyz.min(0)
 
             # crop
-            xyz, valid_idxs = self.crop(xyz)
+            xyz, valid_idxs = self.crop(xyz, label, instance_label)
 
             xyz_middle = xyz_middle[valid_idxs]
             xyz = xyz[valid_idxs]
@@ -317,7 +317,7 @@ class Dataset:
             xyz -= xyz.min(0)
 
             # crop
-            xyz, valid_idxs = self.crop(xyz)
+            xyz, valid_idxs = self.crop(xyz, label, instance_label)
 
             xyz_middle = xyz_middle[valid_idxs]
             xyz = xyz[valid_idxs]
