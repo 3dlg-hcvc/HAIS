@@ -114,17 +114,15 @@ void hierarchical_aggregation(at::Tensor semantic_label_tensor, at::Tensor coord
         at::Tensor cluster_idxs_kept_tensor, at::Tensor cluster_offsets_kept_tensor, at::Tensor cluster_centers_kept_tensor,
         at::Tensor primary_idxs_tensor, at::Tensor primary_offsets_tensor, at::Tensor primary_centers_tensor,
         at::Tensor primary_idxs_post_tensor, at::Tensor primary_offsets_post_tensor, 
-        const int N, const int training_mode_, const int using_set_aggr_, const float *point_num_avg, const float *radius_avg){
+        const int N, const int training_mode_, const int using_set_aggr_, at::Tensor point_num_avg_tensor, at::Tensor radius_avg_tensor){
     int *semantic_label = semantic_label_tensor.data<int>();
     float *coord_shift = coord_shift_tensor.data<float>();
     int *batch_idxs = batch_idxs_tensor.data<int>();
     int *ball_query_idxs = ball_query_idxs_tensor.data<int>();
     int *start_len = start_len_tensor.data<int>();
+    float *point_num_avg = point_num_avg_tensor.data<float>();
+    float *radius_avg = radius_avg_tensor.data<float>();
 
-    for (int i = 0; i < 20; i++) {
-        std::cout << point_num_avg[i] << std::endl;
-        std::cout << "haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
-    }
     ConnectedComponents CCs_fragment;
     ConnectedComponents CCs_kept;
     ConnectedComponents CCs_primary;

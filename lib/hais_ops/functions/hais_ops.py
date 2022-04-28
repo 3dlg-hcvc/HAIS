@@ -1,6 +1,5 @@
 import torch
 from torch.autograd import Function
-import ctypes
 import HAIS_OP
 
 class HierarchicalAggregation(Function):
@@ -42,12 +41,8 @@ class HierarchicalAggregation(Function):
         training_mode_ = 1 if training_mode == 'train' else 0
         using_set_aggr_ = int(using_set_aggr)
 
-        # convert ython list to c-style array
-        c_point_num_avg_array_type = ctypes.c_float * len(point_num_avg)
-        c_point_num_avg = c_point_num_avg_array_type(*point_num_avg)
-
-        c_radius_avg_array_type = ctypes.c_float * len(radius_avg)
-        c_radius_avg = c_radius_avg_array_type(*radius_avg)
+        c_point_num_avg = torch.tensor(point_num_avg)
+        c_radius_avg = torch.tensor(radius_avg)
 
         HAIS_OP.hierarchical_aggregation(semantic_label, coord_shift, batch_idxs, ball_query_idxs, start_len, 
             fragment_idxs, fragment_offsets, fragment_centers,

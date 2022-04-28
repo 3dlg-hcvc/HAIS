@@ -17,7 +17,7 @@ void hierarchical_aggregation(at::Tensor semantic_label_tensor, at::Tensor coord
     at::Tensor cluster_idxs_kept_tensor, at::Tensor cluster_offsets_kept_tensor, at::Tensor cluster_centers_kept_tensor,
     at::Tensor primary_idxs_tensor, at::Tensor primary_offsets_tensor, at::Tensor primary_centers_tensor,
     at::Tensor primary_idxs_post_tensor, at::Tensor primary_offsets_post_tensor,
-    const int N, const int training_mode_, const int using_set_aggr_, const float *point_num_avg, const float *radius_avg);
+    const int N, const int training_mode_, const int using_set_aggr_, at::Tensor point_num_avg, at::Tensor radius_avg);
 
 
 void hierarchical_aggregation_cuda(
