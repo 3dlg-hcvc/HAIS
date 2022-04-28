@@ -104,6 +104,7 @@ class Dataset:
         blur2 = np.ones((1, 1, 3)).astype('float32') / 3
 
         bb = np.abs(x).max(0).astype(np.int32)//gran + 3
+        
         noise = [np.random.randn(bb[0], bb[1], bb[2]).astype('float32') for _ in range(3)]
         noise = [scipy.ndimage.filters.convolve(n, blur0, mode='constant', cval=0) for n in noise]
         noise = [scipy.ndimage.filters.convolve(n, blur1, mode='constant', cval=0) for n in noise]
@@ -221,8 +222,8 @@ class Dataset:
 
             # elastic
             if cfg.elastic:
-                xyz = self.elastic(xyz, normals, 6 * self.scale // 50, 40 * self.scale / 50)
-                xyz = self.elastic(xyz, normals, 20 * self.scale // 50, 160 * self.scale / 50)
+                xyz, normals = self.elastic(xyz, normals, 6 * self.scale // 50, 40 * self.scale / 50)
+                xyz, normals = self.elastic(xyz, normals, 20 * self.scale // 50, 160 * self.scale / 50)
 
             # offset
             xyz -= xyz.min(0)
