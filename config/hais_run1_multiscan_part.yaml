@@ -25,6 +25,8 @@ DATA:
   elastic: True
   color: True
 
+  point_num_avg: []
+
 STRUCTURE:
   model_name: hais
   width: 32

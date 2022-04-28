@@ -1,11 +1,11 @@
 import torch
 from torch.autograd import Function
-
+import ctypes
 import HAIS_OP
 
 class HierarchicalAggregation(Function):
     @staticmethod
-    def forward(ctx, semantic_label, coord_shift, ball_query_idxs, start_len, batch_idxs, training_mode, using_set_aggr):
+    def forward(ctx, semantic_label, coord_shift, ball_query_idxs, start_len, batch_idxs, training_mode, using_set_aggr, point_num_avg, radius_avg):
         '''
         :param ctx:
         :param semantic_label: (N_fg), int
@@ -42,12 +42,19 @@ class HierarchicalAggregation(Function):
         training_mode_ = 1 if training_mode == 'train' else 0
         using_set_aggr_ = int(using_set_aggr)
 
+        # convert ython list to c-style array
+        c_point_num_avg_array_type = ctypes.c_float * len(point_num_avg)
+        c_point_num_avg = c_point_num_avg_array_type(*point_num_avg)
+
+        c_radius_avg_array_type = ctypes.c_float * len(radius_avg)
+        c_radius_avg = c_radius_avg_array_type(*radius_avg)
+
         HAIS_OP.hierarchical_aggregation(semantic_label, coord_shift, batch_idxs, ball_query_idxs, start_len, 
             fragment_idxs, fragment_offsets, fragment_centers,
             cluster_idxs_kept, cluster_offsets_kept, cluster_centers_kept,
             primary_idxs, primary_offsets, primary_centers,
             primary_idxs_post, primary_offsets_post,
-            N, training_mode_, using_set_aggr_)
+            N, training_mode_, using_set_aggr_, c_point_num_avg, c_radius_avg)
 
         if using_set_aggr_ == 0:  # not set aggr
             pass

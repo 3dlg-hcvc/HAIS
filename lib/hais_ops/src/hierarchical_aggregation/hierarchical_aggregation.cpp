@@ -4,10 +4,10 @@
 /* ================================== hierarchical_aggregation ================================== */
 
 // instance point num for each class, statistical data from the training set
-float class_numpoint_mean_dict[20] = {-1., -1., 3917., 12056., 2303., \
-                                    8331., 3948., 3166., 5629., 11719., \
-                                    1003., 3317., 4912., 10221., 3889., \
-                                    4136., 2120., 945., 3967., 2589.};
+//float class_numpoint_mean_dict[20] = {-1., -1., 3917., 12056., 2303., \
+//                                    8331., 3948., 3166., 5629., 11719., \
+//                                    1003., 3317., 4912., 10221., 3889., \
+//                                    4136., 2120., 945., 3967., 2589.};
 
 ConnectedComponent find_cc(int idx, int *semantic_label, float *coord_shift, int *batch_idxs,
         int *ball_query_idxs, int *start_len, int *visited){
@@ -46,7 +46,7 @@ ConnectedComponent find_cc(int idx, int *semantic_label, float *coord_shift, int
 void split_clusters(int *semantic_label, float *coord_shift, int *batch_idxs,
     int *ball_query_idxs, int *start_len, const int nPoint,
     ConnectedComponents &CCs_fragment, ConnectedComponents &CCs_kept, ConnectedComponents &CCs_primary, 
-    int *sumNPoint_fragment, int *sumNPoint_kept, int *sumNPoint_primary){
+    int *sumNPoint_fragment, int *sumNPoint_kept, int *sumNPoint_primary, const float *class_numpoint_mean_dict){
     int visited[nPoint] = {0};
     int _class_idx;
     float _class_numpoint_mean, low_thre, high_thre;
@@ -114,7 +114,7 @@ void hierarchical_aggregation(at::Tensor semantic_label_tensor, at::Tensor coord
         at::Tensor cluster_idxs_kept_tensor, at::Tensor cluster_offsets_kept_tensor, at::Tensor cluster_centers_kept_tensor,
         at::Tensor primary_idxs_tensor, at::Tensor primary_offsets_tensor, at::Tensor primary_centers_tensor,
         at::Tensor primary_idxs_post_tensor, at::Tensor primary_offsets_post_tensor, 
-        const int N, const int training_mode_, const int using_set_aggr_){
+        const int N, const int training_mode_, const int using_set_aggr_, const float *point_num_avg, const float *radius_avg){
     int *semantic_label = semantic_label_tensor.data<int>();
     float *coord_shift = coord_shift_tensor.data<float>();
     int *batch_idxs = batch_idxs_tensor.data<int>();
@@ -128,7 +128,7 @@ void hierarchical_aggregation(at::Tensor semantic_label_tensor, at::Tensor coord
     int sumNPoint_fragment = 0, sumNPoint_kept = 0, sumNPoint_primary = 0;
     split_clusters(semantic_label, coord_shift, batch_idxs, ball_query_idxs, start_len, N,
         CCs_fragment, CCs_kept, CCs_primary,
-        & sumNPoint_fragment, & sumNPoint_kept, & sumNPoint_primary);
+        & sumNPoint_fragment, & sumNPoint_kept, & sumNPoint_primary, point_num_avg);
 
     cluster_idxs_kept_tensor.resize_({sumNPoint_kept, 2});
     cluster_offsets_kept_tensor.resize_({(int)CCs_kept.size() + 1});
@@ -179,6 +179,6 @@ void hierarchical_aggregation(at::Tensor semantic_label_tensor, at::Tensor coord
     // set aggr
     hierarchical_aggregation_cuda(sumNPoint_fragment, (int)CCs_fragment.size(), fragment_idxs, fragment_offsets, fragment_centers,
         sumNPoint_primary, (int)CCs_primary.size(), primary_idxs, primary_offsets, primary_centers,
-        primary_idxs_post, primary_offsets_post);
+        primary_idxs_post, primary_offsets_post, radius_avg);
 
 }

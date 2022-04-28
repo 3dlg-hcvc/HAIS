@@ -115,12 +115,13 @@ class HAIS(nn.Module):
         self.score_scale = cfg.score_scale
         self.score_fullscale = cfg.score_fullscale
         self.score_mode = cfg.score_mode
-
+        self.point_num_avg = cfg.point_num_avg
+        self.radius_avg = cfg.radius_avg
         self.prepare_epochs = cfg.prepare_epochs
         self.pretrain_path = cfg.pretrain_path
         self.pretrain_module = cfg.pretrain_module
         self.fix_module = cfg.fix_module
-        
+        self.inst_stats = {"avg_size": None, "avg_radius": None}
 
         norm_fn = functools.partial(nn.BatchNorm1d, eps=1e-4, momentum=0.1)
 
@@ -308,7 +309,7 @@ class HAIS(nn.Module):
 
             proposals_idx, proposals_offset = hais_ops.hierarchical_aggregation(
                 semantic_preds_cpu, (coords_ + pt_offsets_).cpu(), idx.cpu(), start_len.cpu(),
-                batch_idxs_.cpu(), training_mode, using_set_aggr)             
+                batch_idxs_.cpu(), training_mode, using_set_aggr, self.point_num_avg, self.radius_avg)
 
             proposals_idx[:, 1] = object_idxs[proposals_idx[:, 1].long()].int()
     
