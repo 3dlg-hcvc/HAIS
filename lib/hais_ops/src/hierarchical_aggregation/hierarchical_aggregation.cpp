@@ -121,6 +121,10 @@ void hierarchical_aggregation(at::Tensor semantic_label_tensor, at::Tensor coord
     int *ball_query_idxs = ball_query_idxs_tensor.data<int>();
     int *start_len = start_len_tensor.data<int>();
 
+    for (int i = 0; i < 20; i++) {
+        std::cout << point_num_avg[i] << std::endl;
+        std::cout << "haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+    }
     ConnectedComponents CCs_fragment;
     ConnectedComponents CCs_kept;
     ConnectedComponents CCs_primary;
