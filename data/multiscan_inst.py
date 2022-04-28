@@ -196,11 +196,10 @@ class Dataset:
                 xyz_offset = xyz + offset
                 valid_idxs = (xyz_offset.min(1) >= 0) * ((xyz_offset < full_scale).sum(1) == 3)
                 full_scale[:2] -= 32
-            if valid_idxs.sum() > (self.max_npoint // 10) and np.any(
+            if valid_idxs.sum() > (self.max_npoint // 2) and np.any(
                     semantic_labels[valid_idxs] != cfg.ignore_label) and np.any(
                     inst_ids[valid_idxs] != cfg.ignore_label):
                 break
-            print("!!!!!!!!!!!!!!!!")
         return xyz_offset, valid_idxs
 
     def getCroppedInstLabel(self, instance_label, valid_idxs):
