@@ -21,9 +21,9 @@ DATA:
 
   jitter: True
   flip: True
-  rotation: True
-  elastic: True
-  color: True
+  rotation: False
+  elastic: False
+  color: False
 
   point_num_avg: [-1., -1., -1., 8121., 4787., 2707.,
                   8500., 9742., 9263., 1331., 975.,

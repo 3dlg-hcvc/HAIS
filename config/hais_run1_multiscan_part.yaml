@@ -2,7 +2,7 @@ GENERAL:
   task: train  # train, test
   manual_seed: 123
   model_dir: model/hais/hais.py
-  dataset_dir: data/scannetv2_inst.py
+  dataset_dir: data/multiscan_inst.py
 
 DATA:
   data_root: dataset
