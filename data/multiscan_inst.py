@@ -276,7 +276,7 @@ class Dataset:
                 normals = normals[valid_idxs]
                 normals = normals / (np.linalg.norm(normals, axis=1).reshape(-1, 1) + np.finfo(float).eps)
                 normals = torch.from_numpy(normals)
-                feats.append(torch.cat(rgb_torch, normals, 1))
+                feats.append(torch.cat((rgb_torch, normals), 1).float())
             else:
                 feats.append(rgb_torch)
             labels.append(torch.from_numpy(label))
