@@ -278,7 +278,7 @@ class Dataset:
                 normals = torch.from_numpy(normals)
                 feats.append(torch.cat((rgb_torch, normals), 1).float())
             else:
-                feats.append(rgb_torch.float())
+                feats.append(rgb_torch)
             labels.append(torch.from_numpy(label))
             instance_labels.append(torch.from_numpy(instance_label))
 
@@ -361,7 +361,7 @@ class Dataset:
                 normals = torch.from_numpy(normals)
                 feats.append(torch.cat((torch.from_numpy(rgb), normals), 1).float())
             else:
-                feats.append(torch.from_numpy(rgb).float())
+                feats.append(torch.from_numpy(rgb))
             labels.append(torch.from_numpy(label))
             instance_labels.append(torch.from_numpy(instance_label))
 
@@ -428,7 +428,7 @@ class Dataset:
                 normals = torch.from_numpy(normals)
                 feats.append(torch.cat((torch.from_numpy(rgb), normals), 1).float())
             else:
-                feats.append(torch.from_numpy(rgb).float())
+                feats.append(torch.from_numpy(rgb))
 
             if self.test_split == 'val':
                 labels.append(torch.from_numpy(label))
