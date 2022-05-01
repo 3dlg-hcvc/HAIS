@@ -4,7 +4,7 @@ import scipy.interpolate
 import torch
 from torch.utils.data import DataLoader
 import open3d as o3d
-
+import multiprocessing
 sys.path.append('../')
 
 from util.config import cfg
@@ -28,7 +28,7 @@ class Dataset:
         self.scale = cfg.scale
         self.max_npoint = cfg.max_npoint
         self.mode = cfg.mode
-
+        multiprocessing.set_start_method('forkserver')
         self.train_split = getattr(cfg, 'train_split', 'train')
 
         if test:
