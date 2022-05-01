@@ -156,7 +156,7 @@ if __name__ == '__main__':
     else:
         print("Error: no model - " + model_name)
         exit(0)
-    if cfg.use_normals:
+    if cfg.use_normals and cfg.elastic:
         # prevent multi-processing deadlock in open3d estimate_normals method
         multiprocessing.set_start_method('forkserver')
     model = Network(cfg)
