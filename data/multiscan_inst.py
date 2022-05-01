@@ -4,7 +4,6 @@ import scipy.interpolate
 import torch
 from torch.utils.data import DataLoader
 import open3d as o3d
-
 sys.path.append('../')
 
 from util.config import cfg
@@ -142,7 +141,7 @@ class Dataset:
         :return: instance_num, dict
         '''
         instance_info = np.ones((xyz.shape[0], 9),
-                                dtype=np.float32) * -100.0  # (n, 9), float, (cx, cy, cz, minx, miny, minz, maxx, maxy, maxz)
+                                dtype=np.float32) * cfg.ignore_label  # (n, 9), float, (cx, cy, cz, minx, miny, minz, maxx, maxy, maxz)
         instance_pointnum = []  # (nInst), int
         instance_num = int(instance_label.max()) + 1
         for i_ in range(instance_num):
@@ -260,7 +259,7 @@ class Dataset:
             inst_info = inst_infos["instance_info"]  # (n, 9), (cx, cy, cz, minx, miny, minz, maxx, maxy, maxz)
             inst_pointnum = inst_infos["instance_pointnum"]  # (nInst), list
 
-            instance_label[np.where(instance_label != -100)] += total_inst_num
+            instance_label[np.where(instance_label != cfg.ignore_label)] += total_inst_num
             total_inst_num += inst_num
 
             # merge the scene to the batch
@@ -347,7 +346,7 @@ class Dataset:
             inst_info = inst_infos["instance_info"]  # (n, 9), (cx, cy, cz, minx, miny, minz, maxx, maxy, maxz)
             inst_pointnum = inst_infos["instance_pointnum"]  # (nInst), list
 
-            instance_label[np.where(instance_label != -100)] += total_inst_num
+            instance_label[np.where(instance_label != cfg.ignore_label)] += total_inst_num
             total_inst_num += inst_num
 
             # merge the scene to the batch
