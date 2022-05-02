@@ -8,11 +8,7 @@ from util.config import cfg
 cfg.task = 'test'
 from util.log import logger
 import util.utils as utils
-
-if cfg.seg_task == "instance":
-    import util.inst_eval as eval
-else:
-    import util.part_eval as eval
+import util.eval as eval
 
 def init():
     global result_dir
@@ -24,9 +20,7 @@ def init():
     os.system('cp {} {}'.format(cfg.model_dir, backup_dir))
     os.system('cp {} {}'.format(cfg.dataset_dir, backup_dir))
     os.system('cp {} {}'.format(cfg.config, backup_dir))
-
-    global semantic_label_idx
-    semantic_label_idx = list(range(1, 21))
+    
 
     logger.info(cfg)
 
@@ -39,14 +33,36 @@ def init():
 def test(model, model_fn, data_name, epoch):
     logger.info('>>>>>>>>>>>>>>>> Start Evaluation >>>>>>>>>>>>>>>>')
 
-    if cfg.dataset == 'scannetv2':
-        if data_name == 'scannet':
-            from data.scannetv2_inst import Dataset
-            dataset = Dataset(test=True)
-            dataset.testLoader()
-        else:
-            print("Error: no data loader - " + data_name)
-            exit(0)
+    if cfg.dataset == 'scannetv2' and data_name == 'scannet':
+        from data.scannetv2_inst import Dataset
+        semantic_label_idx = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 24, 28, 33, 34, 36, 39]
+        class_labels = ('cabinet', 'bed', 'chair', 'sofa', 'table', 'door', 'window', 'bookshelf', 'picture', 'counter', 'desk', 'curtain', 'refrigerator', 'shower curtain', 'toilet', 'sink', 'bathtub', 'otherfurniture')
+        valid_class_ids = np.array([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 24, 28, 33, 34, 36, 39])
+
+    elif cfg.dataset == "multiscan_inst" and data_name == 'multiscan_inst':
+        from data.multiscan_inst import Dataset
+        semantic_label_idx = range(1, 21)
+        class_labels = ('door', 'table', 'chair', 'cabinet', 'window', 'sofa', 'microwave', 'pillow',
+'tv_monitor', 'curtain', 'trash_can', 'suitcase', 'sink', 'backpack', 'bed', 'refrigerator','toilet')
+        valid_class_ids = np.array(range(4, 21))
+    elif cfg.dataset == "multiscan_inst" and data_name == 'multiscan_inst':
+        from data.multiscan_inst import Dataset
+        semantic_label_idx = range(1, 6)
+        class_labels = ('static_part', 'door', 'drawer', 'window', 'lid')
+        valid_class_ids = np.array(range(4, 21))
+    else:
+        print("Error: no data loader - " + data_name)
+        exit(0)
+
+    dataset = Dataset(test=True)
+    dataset.testLoader()
+    id2label = {}
+    label2id = {}
+    for i in range(len(valid_class_ids)):
+        label2id[class_labels[i]] = valid_class_ids[i]
+        id2label[valid_class_ids[i]] = class_labels[i]
+            
+        
     dataloader = dataset.test_data_loader
 
     with torch.no_grad():
@@ -63,7 +79,7 @@ def test(model, model_fn, data_name, epoch):
 
             # decode results for evaluation
             N = batch['feats'].shape[0]
-            test_scene_name = dataset.test_file_names[int(batch['id'][0])].split('/')[-1][:12]
+            test_scene_name = dataset.test_file_names[int(batch['id'][0])].split('/')[-1].split('_inst_nostuff.pth')[0]
             semantic_scores = preds['semantic']  # (N, nClass=20) float32, cuda
             semantic_pred = semantic_scores.max(1)[1]  # (N) long, cuda
             pt_offsets = preds['pt_offsets']    # (N, 3), float32, cuda
@@ -132,7 +148,7 @@ def test(model, model_fn, data_name, epoch):
                     pred_info['label_id'] = cluster_semantic_id.cpu().numpy()
                     pred_info['mask'] = clusters.cpu().numpy()
                     gt_file = os.path.join(cfg.data_root, cfg.dataset, cfg.split + '_gt', test_scene_name + '.txt')
-                    gt2pred, pred2gt = eval.assign_instances_for_scan(test_scene_name, pred_info, gt_file)
+                    gt2pred, pred2gt = eval.assign_instances_for_scan(test_scene_name, pred_info, gt_file, class_labels, valid_class_ids, id2label)
 
                     matches[test_scene_name] = {}
                     matches[test_scene_name]['gt'] = gt2pred
@@ -176,20 +192,20 @@ def test(model, model_fn, data_name, epoch):
 
         # evaluation
         if cfg.eval:
-            ap_scores = eval.evaluate_matches(matches)
-            avgs = eval.compute_averages(ap_scores)
-            eval.print_results(avgs)
+            ap_scores = eval.evaluate_matches(matches, class_labels)
+            avgs = eval.compute_averages(ap_scores, class_labels)
+            eval.print_results(avgs, class_labels)
 
         logger.info("whole set inference time: {:.2f}s, latency per frame: {:.2f}ms".format(total_end1, total_end1 / len(dataloader) * 1000))
 
         # evaluate semantic segmantation accuracy and mIoU
         if cfg.split == 'val':
-            seg_accuracy = evaluate_semantic_segmantation_accuracy(matches)
+            seg_accuracy = evaluate_semantic_segmantation_accuracy(matches, cfg.ignore_label)
             logger.info("semantic_segmantation_accuracy: {:.4f}".format(seg_accuracy))
-            miou = evaluate_semantic_segmantation_miou(matches)
+            miou = evaluate_semantic_segmantation_miou(matches, cfg.ignore_label)
             logger.info("semantic_segmantation_mIoU: {:.4f}".format(miou))
 
-def evaluate_semantic_segmantation_accuracy(matches):
+def evaluate_semantic_segmantation_accuracy(matches, ignore_label):
     seg_gt_list = []
     seg_pred_list = []
     for k, v in matches.items():
@@ -198,12 +214,12 @@ def evaluate_semantic_segmantation_accuracy(matches):
     seg_gt_all = torch.cat(seg_gt_list, dim=0).cuda()
     seg_pred_all = torch.cat(seg_pred_list, dim=0).cuda()
     assert seg_gt_all.shape == seg_pred_all.shape
-    correct = (seg_gt_all[seg_gt_all != -100] == seg_pred_all[seg_gt_all != -100]).sum()
-    whole = (seg_gt_all != -100).sum()
+    correct = (seg_gt_all[seg_gt_all != ignore_label] == seg_pred_all[seg_gt_all != ignore_label]).sum()
+    whole = (seg_gt_all != ignore_label).sum()
     seg_accuracy = correct.float() / whole.float()
     return seg_accuracy
 
-def evaluate_semantic_segmantation_miou(matches):
+def evaluate_semantic_segmantation_miou(matches, ignore_label):
     seg_gt_list = []
     seg_pred_list = []
     for k, v in matches.items():
@@ -214,7 +230,7 @@ def evaluate_semantic_segmantation_miou(matches):
     assert seg_gt_all.shape == seg_pred_all.shape
     iou_list = []
     for _index in seg_gt_all.unique():
-        if _index != -100:
+        if _index != ignore_label:
             intersection = ((seg_gt_all == _index) &  (seg_pred_all == _index)).sum()
             union = ((seg_gt_all == _index) | (seg_pred_all == _index)).sum()
             iou = intersection.float() / union
@@ -240,10 +256,9 @@ if __name__ == '__main__':
     init()
 
     exp_name = cfg.config.split('/')[-1][:-5]
-    model_name = exp_name.split('_')[0]
-    data_name = exp_name.split('_')[-1]
-
-    task = cfg.task
+    tmp_split = exp_name.split('_')
+    model_name = tmp_split[0]
+    data_name = '_'.join(tmp_split[2:])
 
     logger.info('=> creating model ...')
     logger.info('Classes: {}'.format(cfg.classes))
