@@ -45,11 +45,11 @@ def test(model, model_fn, data_name, epoch):
         class_labels = ('door', 'table', 'chair', 'cabinet', 'window', 'sofa', 'microwave', 'pillow',
 'tv_monitor', 'curtain', 'trash_can', 'suitcase', 'sink', 'backpack', 'bed', 'refrigerator','toilet')
         valid_class_ids = np.array(range(4, 21))
-    elif cfg.dataset == "multiscan_inst" and data_name == 'multiscan_inst':
+    elif cfg.dataset == "multiscan_part" and data_name == 'multiscan_part':
         from data.multiscan_inst import Dataset
         semantic_label_idx = range(1, 6)
         class_labels = ('static_part', 'door', 'drawer', 'window', 'lid')
-        valid_class_ids = np.array(range(4, 21))
+        valid_class_ids = np.array(range(1, 6))
     else:
         print("Error: no data loader - " + data_name)
         exit(0)

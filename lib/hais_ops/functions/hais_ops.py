@@ -41,8 +41,8 @@ class HierarchicalAggregation(Function):
         training_mode_ = 1 if training_mode == 'train' else 0
         using_set_aggr_ = int(using_set_aggr)
 
-        c_point_num_avg = torch.tensor(point_num_avg)
-        c_radius_avg = torch.tensor(radius_avg)
+        c_point_num_avg = torch.tensor(point_num_avg).cpu()
+        c_radius_avg = torch.tensor(radius_avg).cuda()
 
         HAIS_OP.hierarchical_aggregation(semantic_label, coord_shift, batch_idxs, ball_query_idxs, start_len, 
             fragment_idxs, fragment_offsets, fragment_centers,
