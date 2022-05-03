@@ -30,7 +30,7 @@ def init():
     torch.cuda.manual_seed_all(cfg.test_seed)
 
 
-def test(model, model_fn, data_name, epoch):
+def test(model, model_fn, data_name, epoch, exp_name):
     logger.info('>>>>>>>>>>>>>>>> Start Evaluation >>>>>>>>>>>>>>>>')
 
     if cfg.dataset == 'scannetv2' and data_name == 'scannet':
@@ -79,7 +79,7 @@ def test(model, model_fn, data_name, epoch):
 
             # decode results for evaluation
             N = batch['feats'].shape[0]
-            test_scene_name = dataset.test_file_names[int(batch['id'][0])].split('/')[-1].split('_inst_nostuff.pth')[0]
+            test_scene_name = dataset.test_file_names[int(batch['id'][0])].split('/')[-1].split(cfg.filename_suffix)[0]
             semantic_scores = preds['semantic']  # (N, nClass=20) float32, cuda
             semantic_pred = semantic_scores.max(1)[1]  # (N) long, cuda
             pt_offsets = preds['pt_offsets']    # (N, 3), float32, cuda
@@ -194,7 +194,7 @@ def test(model, model_fn, data_name, epoch):
         if cfg.eval:
             ap_scores = eval.evaluate_matches(matches, class_labels)
             avgs = eval.compute_averages(ap_scores, class_labels)
-            eval.print_results(avgs, class_labels)
+            eval.print_results(avgs, class_labels, exp_name)
 
         logger.info("whole set inference time: {:.2f}s, latency per frame: {:.2f}ms".format(total_end1, total_end1 / len(dataloader) * 1000))
 
@@ -285,5 +285,6 @@ if __name__ == '__main__':
         use_cuda, cfg.test_epoch, dist=False, f=cfg.pretrain)      
     # resume from the latest epoch, or specify the epoch to restore
 
+    exp_name = cfg.pretrain.split("/")[-2]
     # evaluate
-    test(model, model_fn, data_name, cfg.test_epoch)
+    test(model, model_fn, data_name, cfg.test_epoch, exp_name)
