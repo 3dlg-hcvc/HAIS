@@ -225,8 +225,12 @@ class Dataset:
         total_inst_num = 0
         for i, idx in enumerate(id):
 
-            xyz_origin, rgb, normals, label, instance_label = self.train_files[idx]
-
+            input_instance = self.train_files[idx]
+            xyz_origin = input_instance['coords']
+            rgb = input_instance['colors'] / 127.5 - 1
+            normals = input_instance['normals']
+            label = input_instance['sem_labels']
+            instance_label = input_instance['instance_ids']
             if not cfg.use_normals:
                 normals = None
 
@@ -320,7 +324,14 @@ class Dataset:
 
         total_inst_num = 0
         for i, idx in enumerate(id):
-            xyz_origin, rgb, normals, label, instance_label = self.val_files[idx]
+            input_instance = self.val_files[idx]
+            xyz_origin = input_instance['coords']
+            rgb = input_instance['colors'] / 127.5 - 1
+            normals = input_instance['normals']
+            label = input_instance['sem_labels']
+            instance_label = input_instance['instance_ids']
+            if not cfg.use_normals:
+                normals = None
 
             # flip x / rotation
             xyz_middle, normals = self.dataAugment(xyz_origin, normals, False, True, False)
@@ -400,12 +411,22 @@ class Dataset:
         for i, idx in enumerate(id):
 
             if self.test_split == 'val':
-                xyz_origin, rgb, normals, label, instance_label = self.test_files[idx]
+                input_instance = self.test_files[idx]
+                xyz_origin = input_instance['coords']
+                rgb = input_instance['colors'] / 127.5 - 1
+                normals = input_instance['normals']
+                label = input_instance['sem_labels']
             elif self.test_split == 'test':
-                xyz_origin, rgb, normals = self.test_files[idx]
+                input_instance = self.test_files[idx]
+                xyz_origin = input_instance['coords']
+                rgb = input_instance['colors'] / 127.5 - 1
+                normals = input_instance['normals']
             else:
                 print("Wrong test split: {}!".format(self.test_split))
                 exit(0)
+
+            if not cfg.use_normals:
+                normals = None
 
             # flip x / rotation
             xyz_middle, normals = self.dataAugment(xyz_origin, normals, False, False, False)
