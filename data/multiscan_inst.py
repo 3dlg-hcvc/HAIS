@@ -395,9 +395,9 @@ class Dataset:
 
             if self.test_split == 'val':
                 input_instance = self.test_files[idx]
-                xyz_origin = input_instance['aligned_mesh'][:, :3]
-                rgb = input_instance['aligned_mesh'][:, 3:6] / 127.5 - 1
-                normals = input_instance['aligned_mesh'][:, 6:9]
+                xyz_origin = input_instance['coords']
+                rgb = input_instance['colors'] / 127.5 - 1
+                normals = input_instance['normals']
                 label = input_instance['sem_labels']
                 instance_label = input_instance['instance_ids']
             elif self.test_split == 'test':

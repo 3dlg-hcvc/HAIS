@@ -52,10 +52,7 @@ __global__ void fragment_find_primary_(int primary_num, int *cuda_primary_offset
 
     // r_cls
     // instance radius for each class, statistical data from the training set
-    float class_radius_mean[20] = {-1., -1., 0.7047687683952325, 1.1732690381942337,  0.39644035821116036, \
-        1.011516629020215,  0.7260155292902369, 0.8674973999335017, 0.8374931435447094,  1.0454153869133096, \
-        0.32879464797430913,  1.1954566226966346,  0.8628817944400078,  1.0416287916782507, 0.6602697958671507,  \
-        0.8541363897836871, 0.38055290598206537, 0.3011878752684007,  0.7420871812436316,  0.4474268644407741};
+    float class_radius_mean[5] = {-1., 0.564342, 0.281144, 0.730079, 0.303201};
     int _class_idx = (int)cuda_fragment_centers[fragment_idx * 5 + 3];
     float r_cls = class_radius_mean[_class_idx] * 1.;
 

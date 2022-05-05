@@ -2,7 +2,7 @@ GENERAL:
   task: train  # train, test
   manual_seed: 123
   model_dir: model/hais/hais.py
-  dataset_dir: data/scannetv2_inst.py
+  dataset_dir: data/multiscan_inst.py
 
 DATA:
   data_root: dataset
@@ -34,7 +34,7 @@ STRUCTURE:
   use_normals: False
 
 TRAIN:
-  epochs: 512
+  epochs: 500
   train_workers: 0 # data loader workers
   optim: Adam # Adam or SGD
   lr: 0.001
@@ -72,13 +72,13 @@ TRAIN:
 
 TEST:
   split: val
-  test_epoch: 464
+  test_epoch: 500
   test_workers: 0
   test_seed: 567
 
   using_NMS: False
   TEST_NMS_THRESH: 0.3
-  TEST_SCORE_THRESH: 0.02
+  TEST_SCORE_THRESH: 0.09
   TEST_NPOINT_THRESH: 100
 
   eval: True
@@ -87,7 +87,4 @@ TEST:
   save_instance: True
 
   test_mask_score_thre: -0.5 # bias fg << bg
-
-
-
 

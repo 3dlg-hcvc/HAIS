@@ -68,7 +68,7 @@ class UBlock(nn.Module):
 
         if len(nPlanes) > 1:
             self.conv = spconv.SparseSequential(
-                norm_fn(nPlanes[0]),
+                # norm_fn(nPlanes[0]),
                 nn.ReLU(),                                   
                 spconv.SparseConv3d(nPlanes[0], nPlanes[1], kernel_size=2, stride=2, bias=False, indice_key='spconv{}'.format(indice_key_id))
             )
@@ -76,7 +76,7 @@ class UBlock(nn.Module):
             self.u = UBlock(nPlanes[1:], norm_fn, block_reps, block, indice_key_id=indice_key_id+1)
 
             self.deconv = spconv.SparseSequential(
-                norm_fn(nPlanes[1]),
+                # norm_fn(nPlanes[1]),
                 nn.ReLU(),                                             
                 spconv.SparseInverseConv3d(nPlanes[1], nPlanes[0], kernel_size=2, bias=False, indice_key='spconv{}'.format(indice_key_id))
             )

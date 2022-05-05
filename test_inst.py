@@ -1,5 +1,6 @@
 import torch
 import time
+import json
 import numpy as np
 import random
 import os
@@ -169,7 +170,9 @@ def test(model, model_fn, data_name, epoch):
 
         # evaluation
         if cfg.eval:
-            ap_scores = eval.evaluate_matches(matches)
+            ap_scores, gt_pred_match = eval.evaluate_matches(matches)
+            with open(os.path.join(result_dir, 'gt_pred_match.json'), 'w+') as fp:
+                json.dump(gt_pred_match, fp, indent=2)
             avgs = eval.compute_averages(ap_scores)
             eval.print_results(avgs)
 
