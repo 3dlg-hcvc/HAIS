@@ -5,7 +5,7 @@ from tensorboardX import SummaryWriter
 import numpy as np
 
 from util.config import cfg
-
+import multiprocessing
 import torch.distributed as dist
 
 
@@ -130,6 +130,7 @@ def eval_epoch(val_loader, model, model_fn, epoch):
 
 
 if __name__ == '__main__':
+
     if cfg.dist == True:
         raise NotImplementedError
         # num_gpus = torch.cuda.device_count()
@@ -155,7 +156,9 @@ if __name__ == '__main__':
     else:
         print("Error: no model - " + model_name)
         exit(0)
-
+    if cfg.use_normals and cfg.elastic:
+        # prevent multi-processing deadlock in open3d estimate_normals method
+        multiprocessing.set_start_method('forkserver')
     model = Network(cfg)
 
     use_cuda = torch.cuda.is_available()

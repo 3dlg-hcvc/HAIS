@@ -25,17 +25,27 @@ DATA:
   elastic: True
   color: True
 
+  point_num_avg: [-1., -1., -1., 8121., 4787., 2707.,
+                  8500., 9742., 9263., 1331., 975.,
+                  1963, 5546., 1528., 863., 1912.,
+                  958., 12053., 5367., 2988.]
+  radius_avg: [-1., -1., -1., 1.246813, 0.852165,
+               0.574624, 1.023857, 1.342354, 0.958129,
+               0.376610, 0.403388, 0.448872, 1.077033,
+               0.384742, 0.344384, 0.478019, 0.358381,
+               1.432853, 0.867658, 0.563205]
+
 STRUCTURE:
   model_name: hais
   width: 32
   block_residual: True
   block_reps: 2
   use_coords: True
-  use_normals: False
+  use_normals: True
 
 TRAIN:
   epochs: 512
-  train_workers: 16 # data loader workers
+  train_workers: 4 # data loader workers
   optim: Adam # Adam or SGD
   lr: 0.001
   step_epoch: 200

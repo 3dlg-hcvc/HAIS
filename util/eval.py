@@ -1,19 +1,10 @@
 # Modified from ScanNet evaluation script: https://github.com/ScanNet/ScanNet/blob/master/BenchmarkScripts/3d_evaluation/evaluate_semantic_instance.py
 
-import os, sys, numpy as np
+import numpy as np
 import util.utils_3d as util_3d
 import util.utils as util
 
-# ---------- Label info ---------- #
-CLASS_LABELS = ['door', 'table', 'chair', 'cabinet', 'window', 'sofa', 'microwave', 'pillow',
-'tv_monitor', 'curtain', 'trash_can', 'suitcase', 'sink', 'backpack', 'bed', 'refrigerator','toilet']
-VALID_CLASS_IDS = range(4, 21)
 
-ID_TO_LABEL = {}
-LABEL_TO_ID = {}
-for i in range(len(VALID_CLASS_IDS)):
-    LABEL_TO_ID[CLASS_LABELS[i]] = VALID_CLASS_IDS[i]
-    ID_TO_LABEL[VALID_CLASS_IDS[i]] = CLASS_LABELS[i]
 # ---------- Evaluation params ---------- #
 # overlaps for evaluation
 OVERLAPS             = np.append(np.arange(0.5,0.95,0.05), 0.25)
@@ -25,24 +16,24 @@ DISTANCE_THRESHES    = np.array( [  float('inf') ] )
 DISTANCE_CONFS       = np.array( [ -float('inf') ] )
 
 
-def evaluate_matches(matches):
+def evaluate_matches(matches, class_labels):
     overlaps = OVERLAPS
     min_region_sizes = [MIN_REGION_SIZES[0]]
     dist_threshes = [DISTANCE_THRESHES[0]]
     dist_confs = [DISTANCE_CONFS[0]]
 
     # results: class x overlap
-    ap = np.zeros((len(dist_threshes), len(CLASS_LABELS), len(overlaps)), np.float)
+    ap = np.zeros((len(dist_threshes), len(class_labels), len(overlaps)), np.float)
     for di, (min_region_size, distance_thresh, distance_conf) in enumerate(zip(min_region_sizes, dist_threshes, dist_confs)):
         for oi, overlap_th in enumerate(overlaps):
             pred_visited = {}
             for m in matches:
                 for p in matches[m]['pred']:
-                    for label_name in CLASS_LABELS:
+                    for label_name in class_labels:
                         for p in matches[m]['pred'][label_name]:
                             if 'filename' in p:
                                 pred_visited[p['filename']] = False
-            for li, label_name in enumerate(CLASS_LABELS):
+            for li, label_name in enumerate(class_labels):
                 y_true = np.empty(0)
                 y_score = np.empty(0)
                 hard_false_negatives = 0
@@ -182,7 +173,7 @@ def evaluate_matches(matches):
     return ap
 
 
-def compute_averages(aps):
+def compute_averages(aps, class_labels):
     d_inf = 0
     o50   = np.where(np.isclose(OVERLAPS,0.5))
     o25   = np.where(np.isclose(OVERLAPS,0.25))
@@ -193,7 +184,7 @@ def compute_averages(aps):
     avg_dict['all_ap_50%'] = np.nanmean(aps[ d_inf,:,o50])
     avg_dict['all_ap_25%'] = np.nanmean(aps[ d_inf,:,o25])
     avg_dict["classes"]  = {}
-    for (li,label_name) in enumerate(CLASS_LABELS):
+    for (li,label_name) in enumerate(class_labels):
         avg_dict["classes"][label_name]             = {}
         #avg_dict["classes"][label_name]["ap"]       = np.average(aps[ d_inf,li,  :])
         avg_dict["classes"][label_name]["ap"]       = np.average(aps[ d_inf,li,oAllBut25])
@@ -202,7 +193,7 @@ def compute_averages(aps):
     return avg_dict
 
 
-def assign_instances_for_scan(scene_name, pred_info, gt_file):
+def assign_instances_for_scan(scene_name, pred_info, gt_file, class_labels, valid_class_ids, id_to_label):
 
     try:
         gt_ids = util_3d.load_ids(gt_file)
@@ -210,7 +201,7 @@ def assign_instances_for_scan(scene_name, pred_info, gt_file):
         util.print_error('unable to load ' + gt_file + ': ' + str(e))
 
     # get gt instances
-    gt_instances = util_3d.get_instances(gt_ids, VALID_CLASS_IDS, CLASS_LABELS, ID_TO_LABEL)
+    gt_instances = util_3d.get_instances(gt_ids, valid_class_ids, class_labels, id_to_label)
     
 
     # gt instance  statistics
@@ -225,19 +216,19 @@ def assign_instances_for_scan(scene_name, pred_info, gt_file):
         for gt in gt2pred[label]:
             gt['matched_pred'] = []
     pred2gt = {}
-    for label in CLASS_LABELS:
+    for label in class_labels:
         pred2gt[label] = []
     num_pred_instances = 0
     # mask of void labels in the groundtruth
-    bool_void = np.logical_not(np.in1d(gt_ids//1000, VALID_CLASS_IDS))
+    bool_void = np.logical_not(np.in1d(gt_ids//1000, valid_class_ids))
     # go thru all prediction masks
     nMask = pred_info['label_id'].shape[0]
     for i in range(nMask):
         label_id = int(pred_info['label_id'][i])
         conf = pred_info['conf'][i]
-        if not label_id in ID_TO_LABEL:
+        if not label_id in id_to_label:
             continue
-        label_name = ID_TO_LABEL[label_id]
+        label_name = id_to_label[label_id]
         # read the mask
         pred_mask = pred_info['mask'][i]   # (N), long
         if len(pred_mask) != len(gt_ids):
@@ -276,7 +267,7 @@ def assign_instances_for_scan(scene_name, pred_info, gt_file):
     return gt2pred, pred2gt
 
 
-def print_results(avgs):
+def print_results(avgs, class_labels):
     from util.log import logger
     sep     = ""
     col1    = ":"
@@ -292,7 +283,7 @@ def print_results(avgs):
     logger.info(line)
     logger.info("#" * lineLen)
 
-    for (li,label_name) in enumerate(CLASS_LABELS):
+    for (li,label_name) in enumerate(class_labels):
         ap_avg  = avgs["classes"][label_name]["ap"]
         ap_50o  = avgs["classes"][label_name]["ap50%"]
         ap_25o  = avgs["classes"][label_name]["ap25%"]

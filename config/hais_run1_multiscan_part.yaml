@@ -2,7 +2,7 @@ GENERAL:
   task: train  # train, test
   manual_seed: 123
   model_dir: model/hais/hais.py
-  dataset_dir: data/scannetv2_inst.py
+  dataset_dir: data/multiscan_inst.py
 
 DATA:
   data_root: dataset
@@ -14,16 +14,19 @@ DATA:
 
   input_channel: 3
   scale: 50   # voxel_size = 1 / scale, scale 50 -> voxel_size 0.02m
-  batch_size: 4
+  batch_size: 16
   full_scale: [128, 512]
   max_npoint: 250000
   mode: 4 # 4=mean
 
   jitter: True
   flip: True
-  rotation: True
-  elastic: True
-  color: True
+  rotation: False
+  elastic: False
+  color: False
+
+  point_num_avg: [4223., 1941., 624., 2599., 717.]
+  radius_avg: [1.012157, 0.564342, 0.281144, 0.730079, 0.303201]
 
 STRUCTURE:
   model_name: hais
@@ -35,7 +38,7 @@ STRUCTURE:
 
 TRAIN:
   epochs: 512
-  train_workers: 16 # data loader workers
+  train_workers: 4 # data loader workers
   optim: Adam # Adam or SGD
   lr: 0.001
   step_epoch: 200
@@ -72,7 +75,7 @@ TRAIN:
 
 TEST:
   split: val
-  test_epoch: 464
+  test_epoch: 500
   test_workers: 16
   test_seed: 567
 
@@ -87,9 +90,3 @@ TEST:
   save_instance: True
 
   test_mask_score_thre: -0.5 # bias fg << bg
-
-
-  
-
-
-
