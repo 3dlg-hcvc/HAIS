@@ -15,7 +15,7 @@ def init():
     result_dir = os.path.join(cfg.exp_path, 'result', cfg.split)
     backup_dir = os.path.join(result_dir, 'backup_files')
     os.makedirs(backup_dir, exist_ok=True)
-    os.makedirs(os.path.join(result_dir, 'predicted_masks'), exist_ok=True)
+    os.makedirs(os.path.join(result_dir, 'instance', 'predicted_masks'), exist_ok=True)
     os.system('cp test.py {}'.format(backup_dir))
     os.system('cp {} {}'.format(cfg.model_dir, backup_dir))
     os.system('cp {} {}'.format(cfg.dataset_dir, backup_dir))
@@ -160,29 +160,30 @@ def test(model, model_fn, data_name, epoch, exp_name):
     
 
             # save files
+            os.makedirs(os.path.join(result_dir, 'instance'), exist_ok=True)
             if cfg.save_semantic:
                 os.makedirs(os.path.join(result_dir, 'semantic'), exist_ok=True)
                 semantic_np = semantic_pred.cpu().numpy()
-                np.save(os.path.join(result_dir, 'semantic', test_scene_name + '.npy'), semantic_np)
+                np.savetxt(os.path.join(result_dir, 'semantic', test_scene_name + '.txt'), semantic_np, fmt='%d')
 
             if cfg.save_pt_offsets:
                 os.makedirs(os.path.join(result_dir, 'coords_offsets'), exist_ok=True)
                 pt_offsets_np = pt_offsets.cpu().numpy()
                 coords_np = batch['locs_float'].numpy()
                 coords_offsets = np.concatenate((coords_np, pt_offsets_np), 1)   # (N, 6)
-                np.save(os.path.join(result_dir, 'coords_offsets', test_scene_name + '.npy'), coords_offsets)
+                np.savetxt(os.path.join(result_dir, 'coords_offsets', test_scene_name + '.txt'), coords_offsets)
 
             if(epoch > cfg.prepare_epochs and cfg.save_instance):
-                f = open(os.path.join(result_dir, test_scene_name + '.txt'), 'w')
+                f = open(os.path.join(result_dir, 'instance', test_scene_name + '.txt'), 'w')
                 for proposal_id in range(nclusters):
                     clusters_i = clusters[proposal_id].cpu().numpy()  # (N)
                     semantic_label = np.argmax(np.bincount(semantic_pred[np.where(clusters_i == 1)[0]].cpu()))
                     score = cluster_scores[proposal_id]
-                    f.write('predicted_masks/{}_{:03d}.txt {} {:.4f}'.format( \
+                    f.write('instance/predicted_masks/{}_{:03d}.txt {} {:.4f}'.format( \
                         test_scene_name, proposal_id, semantic_label_idx[semantic_label], score))
                     if proposal_id < nclusters - 1:
                         f.write('\n')
-                    np.savetxt(os.path.join(result_dir, 'predicted_masks', test_scene_name + '_%03d.txt' % (proposal_id)), clusters_i, fmt='%d')
+                    np.savetxt(os.path.join(result_dir, 'instance', 'predicted_masks', test_scene_name + '_%03d.txt' % (proposal_id)), clusters_i, fmt='%d')
                 f.close()
 
 
