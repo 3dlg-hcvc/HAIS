@@ -14,6 +14,7 @@ MIN_REGION_SIZES     = np.array( [ 100 ] )
 DISTANCE_THRESHES    = np.array( [  float('inf') ] )
 # distance confidences
 DISTANCE_CONFS       = np.array( [ -float('inf') ] )
+IOU_THRESH           = 0.5
 
 
 def evaluate_matches(matches, class_labels):
@@ -24,10 +25,13 @@ def evaluate_matches(matches, class_labels):
 
     # results: class x overlap
     ap = np.zeros((len(dist_threshes), len(class_labels), len(overlaps)), np.float)
+    gt_pred_match = {}
     for di, (min_region_size, distance_thresh, distance_conf) in enumerate(zip(min_region_sizes, dist_threshes, dist_confs)):
         for oi, overlap_th in enumerate(overlaps):
             pred_visited = {}
             for m in matches:
+                if overlap_th == IOU_THRESH:
+                    gt_pred_match[m] = {}
                 for p in matches[m]['pred']:
                     for label_name in class_labels:
                         for p in matches[m]['pred'][label_name]:
@@ -55,6 +59,8 @@ def evaluate_matches(matches, class_labels):
                     cur_match = np.zeros(len(gt_instances), dtype=np.bool)
                     # collect matches
                     for (gti, gt) in enumerate(gt_instances):
+                        if overlap_th == IOU_THRESH:
+                            gt_pred_match[m][gt["instance_id"]] = ''
                         found_match = False
                         num_pred = len(gt['matched_pred'])
                         for pred in gt['matched_pred']:
@@ -68,6 +74,8 @@ def evaluate_matches(matches, class_labels):
                                 # if already have a prediction for this gt,
                                 # the prediction with the lower score is automatically a false positive
                                 if cur_match[gti]:
+                                    if cur_score[gti] < confidence and overlap_th == IOU_THRESH:
+                                        gt_pred_match[m][gt["instance_id"]] = pred['filename']
                                     max_score = max(cur_score[gti], confidence)
                                     min_score = min(cur_score[gti], confidence)
                                     cur_score[gti] = max_score
@@ -77,6 +85,8 @@ def evaluate_matches(matches, class_labels):
                                     cur_match = np.append(cur_match, True)
                                 # otherwise set score
                                 else:
+                                    if overlap_th == IOU_THRESH:
+                                        gt_pred_match[m][gt["instance_id"]] = pred['filename']
                                     found_match = True
                                     cur_match[gti] = True
                                     cur_score[gti] = confidence
@@ -170,7 +180,7 @@ def evaluate_matches(matches, class_labels):
                 else:
                     ap_current = float('nan')
                 ap[di, li, oi] = ap_current
-    return ap
+    return ap, gt_pred_match
 
 
 def compute_averages(aps, class_labels):

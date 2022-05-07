@@ -3,6 +3,7 @@ import time
 import numpy as np
 import random
 import os
+import json
 
 from util.config import cfg
 cfg.task = 'test'
@@ -192,9 +193,11 @@ def test(model, model_fn, data_name, epoch, exp_name):
 
         # evaluation
         if cfg.eval:
-            ap_scores = eval.evaluate_matches(matches, class_labels)
+            ap_scores, gt_pred_match = eval.evaluate_matches(matches, class_labels)
+            with open(os.path.join(result_dir, 'gt_pred_match.json'), 'w+') as fp:
+                json.dump(gt_pred_match, fp, indent=2)
             avgs = eval.compute_averages(ap_scores, class_labels)
-            eval.print_results(avgs, class_labels, exp_name)
+            eval.print_results(avgs, class_labels)
 
         logger.info("whole set inference time: {:.2f}s, latency per frame: {:.2f}ms".format(total_end1, total_end1 / len(dataloader) * 1000))
 
@@ -281,7 +284,7 @@ if __name__ == '__main__':
     model_fn = model_fn_decorator(test=True)
 
     # load model
-    utils.checkpoint_restore(cfg, model, None, cfg.exp_path, cfg.config.split('/')[-1][:-5], 
+    cfg.pretrain = utils.checkpoint_restore(cfg, model, None, cfg.exp_path, cfg.config.split('/')[-1][:-5],
         use_cuda, cfg.test_epoch, dist=False, f=cfg.pretrain)      
     # resume from the latest epoch, or specify the epoch to restore
 
