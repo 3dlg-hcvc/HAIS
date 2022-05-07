@@ -179,11 +179,11 @@ def test(model, model_fn, data_name, epoch, exp_name):
                     clusters_i = clusters[proposal_id].cpu().numpy()  # (N)
                     semantic_label = np.argmax(np.bincount(semantic_pred[np.where(clusters_i == 1)[0]].cpu()))
                     score = cluster_scores[proposal_id]
-                    f.write('instance/predicted_masks/{}_{:03d}.txt {} {:.4f}'.format( \
+                    f.write('predicted_masks/{}_{:03d}.txt {} {:.4f}'.format( \
                         test_scene_name, proposal_id, semantic_label_idx[semantic_label], score))
                     if proposal_id < nclusters - 1:
                         f.write('\n')
-                    np.savetxt(os.path.join(result_dir, 'instance', 'predicted_masks', test_scene_name + '_%03d.txt' % (proposal_id)), clusters_i, fmt='%d')
+                    np.savetxt(os.path.join(result_dir, 'instance', 'predicted_masks', test_scene_name + '_%03d.txt' % (proposal_id)), clusters_i.nonzero(), fmt='%d')
                 f.close()
 
 
